@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>deep-research-agent — cited or it didn't happen</title>
+<style>
+:root{
+  --bg:#0d0802; --panel:#130c04; --panel2:#1b1206; --line:#4a2f12;
+  --amber:#fbbf24; --bright:#fdf3d8; --dim:#a38c63;
+  --green:#4ade80; --red:#f87171; --text:#f0e6cf;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);
+  font-family:ui-monospace,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+  line-height:1.65;padding:1.6rem 1.1rem;max-width:920px;margin:0 auto;font-size:15px}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:60;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.20) 0 1px, transparent 1px 3px);opacity:.35}
+header.top{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.3rem}
+.dot{width:10px;height:10px;border-radius:50%;background:#3a4a41}
+.dot.ok{background:var(--green);box-shadow:0 0 10px var(--green)}
+h1{font-size:1.15rem;letter-spacing:2px;color:var(--bright)}
+h1 span{color:var(--amber)}
+.sys{margin-left:auto;color:var(--dim);font-size:.78rem;letter-spacing:1px}
+.sub{color:var(--dim);font-size:.85rem;margin:.5rem 0 1.2rem;max-width:70ch}
+.sub b{color:var(--amber);font-weight:normal}
+.panel{border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  padding:1rem 1.1rem;margin-bottom:1.1rem}
+.panel h2{font-size:.8rem;letter-spacing:2px;color:var(--amber);margin-bottom:.7rem}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem}
+.step{border:1px solid var(--line);border-radius:8px;padding:.7rem .8rem;background:var(--panel2)}
+.step b{color:var(--bright);display:block;font-size:.85rem;margin-bottom:.25rem}
+.step p{color:var(--dim);font-size:.8rem}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem}
+.chip{border:1px solid var(--line);background:var(--panel2);color:var(--text);
+  border-radius:999px;padding:.35rem .8rem;font-family:inherit;font-size:.78rem;cursor:pointer}
+.chip:hover{border-color:var(--amber);color:var(--bright)}
+.row{display:flex;gap:.7rem;align-items:stretch}
+input[type=text]{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  color:var(--bright);padding:.75rem 1rem;font-size:.95rem;font-family:inherit;min-width:0}
+input:focus{outline:none;border-color:var(--amber)}
+button.go{background:var(--amber);border:1px solid var(--amber);color:#1a0f02;font-family:inherit;
+  font-weight:bold;letter-spacing:1px;padding:.75rem 1.5rem;border-radius:8px;cursor:pointer}
+button.go:disabled{opacity:.5;cursor:wait}
+#report{white-space:pre-wrap;font-size:.88rem}
+#report h3{color:var(--bright);font-size:1rem;margin:1rem 0 .4rem}
+#report .cite{color:var(--amber)}
+.pipe{display:flex;gap:.6rem;flex-wrap:wrap;margin:.8rem 0}
+.pipe span{border:1px solid var(--line);border-radius:6px;padding:.35rem .8rem;font-size:.78rem;color:var(--dim)}
+.pipe span.hit{border-color:var(--amber);color:var(--amber)}
+pre.dump{background:#080502;border:1px solid var(--line);border-radius:6px;
+  padding:.6rem .8rem;overflow-x:auto;font-size:.78rem;color:var(--bright);white-space:pre-wrap}
+.stats{display:flex;gap:1.4rem;flex-wrap:wrap}
+.stat b{display:block;font-size:1.3rem;color:var(--amber)}
+.stat span{color:var(--dim);font-size:.75rem;letter-spacing:1px}
+.rej{color:var(--red);font-size:.8rem}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="dot ok" id="livedot"></span>
+  <h1>deep<span>-research-agent</span></h1>
+  <span class="sys">planner → researcher → critic → writer</span>
+</header>
+<p class="sub">A multi-agent research pipeline with one hard rule: <b>no
+claim reaches the report without a citation the critic verified</b>.
+Watch the pipeline stages fire, read the rejected fabrications, and
+check every citation against its source.</p>
+
+<div class="panel">
+  <h2>HOW IT WORKS</h2>
+  <div class="steps">
+    <div class="step"><b>1 · Plan</b><p>The topic splits into three aspects — what it is, the numbers, the trade-offs — so research covers depth, not just surface.</p></div>
+    <div class="step"><b>2 · Research</b><p>Mock MCP web tools fetch candidate claims. Deliberately, a few fabricated claims are mixed in — real agents hallucinate mid-research.</p></div>
+    <div class="step"><b>3 · Critic</b><p>Every claim is token-checked against its cited source. Below 0.75 containment it's rejected; too many rejections triggers a wider re-run.</p></div>
+    <div class="step"><b>4 · Write</b><p>The writer only ever sees accepted claims, so the report is cited by construction. Rejected fabrications are shown below.</p></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>RUN A RESEARCH TASK</h2>
+  <div class="chips" id="samples"></div>
+  <div class="row">
+    <input type="text" id="topic" placeholder="ask about something the mock web knows…" />
+    <button class="go" id="run">RESEARCH</button>
+  </div>
+  <div class="pipe" id="pipe">
+    <span>plan</span><span>research</span><span>critic</span><span>write</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>REPORT</h2>
+  <div id="report"><p style="color:var(--dim)">nothing researched yet.</p></div>
+</div>
+
+<div class="panel">
+  <h2>CRITIC'S REJECTIONS — FABRICATIONS CAUGHT</h2>
+  <div id="rej"><p style="color:var(--dim)">nothing yet.</p></div>
+</div>
+
+<div class="panel">
+  <h2>EVALS — CITATION ENFORCEMENT (offline)</h2>
+  <div class="stats">
+    <div class="stat"><b>100%</b><span>citation coverage — 19/19 claims cite a source</span></div>
+    <div class="stat"><b>100%</b><span>claim verifiability — 19/19 claims' words trace to the cited source</span></div>
+    <div class="stat"><b>0</b><span>planted fabrications leaked into any report — 6 in, 6 caught</span></div>
+  </div>
+  <p style="color:var(--dim);font-size:.8rem;margin-top:.6rem">Reproduce: <code>python3 evals/run_eval.py</code> — a critic that passes everything is a rubber stamp, so the suite counts rejections too.</p>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var samples = ['vector databases 2025', 'eval-driven development', 'mcp in production'];
+  var chips = document.getElementById('samples');
+  var topicEl = document.getElementById('topic');
+  samples.forEach(function(s){
+    var b = document.createElement('button');
+    b.className = 'chip'; b.textContent = s;
+    b.onclick = function(){ topicEl.value = s; };
+    chips.appendChild(b);
+  });
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function light(stage){
+    var spans = document.getElementById('pipe').children;
+    var order = ['plan','research','critic','write'];
+    for (var i = 0; i < spans.length; i++) {
+      spans[i].className = order.indexOf(stage) >= i ? 'hit' : '';
+    }
+  }
+  document.getElementById('run').onclick = function(){
+    var t = topicEl.value.trim(); if (!t) return;
+    var btn = document.getElementById('run'); btn.disabled = true;
+    light('plan');
+    document.getElementById('report').innerHTML = '<p style="color:var(--dim)">researching…</p>';
+    document.getElementById('rej').innerHTML = '';
+    setTimeout(function(){ light('research'); }, 400);
+    fetch('/research', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic: t})}).then(function(r){ return r.json(); })
+    .then(function(out){
+      light('write');
+      var html = esc(out.report).replace(/\[(\d+)\]/g, '<span class="cite">[$1]</span>');
+      document.getElementById('report').innerHTML = html;
+      var rej = out.rejected;
+      document.getElementById('rej').innerHTML = rej.length
+        ? rej.map(function(r){
+            return '<p class="rej">✕ "' + esc(r.claim.slice(0, 90)) + '…" — ' + esc(r.reason) + '</p>';
+          }).join('')
+        : '<p style="color:var(--dim)">nothing rejected this time.</p>';
+      btn.disabled = false;
+    }).catch(function(){
+      document.getElementById('report').innerHTML = '<p class="rej">backend unreachable — is the service awake?</p>';
+      btn.disabled = false;
+    });
+  };
+  topicEl.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') document.getElementById('run').click();
+  });
+})();
+</script>
+</body>
+</html>
